@@ -1,0 +1,34 @@
+[
+  {
+    "id": "1764676629220",
+    "name": "Test User",
+    "employeeId": "12345",
+    "answer": "פריז",
+    "isCorrect": true,
+    "timestamp": "2025-12-02T11:57:09.220Z"
+  },
+  {
+    "id": "1764677444175",
+    "name": "ירום גנור",
+    "employeeId": "123",
+    "answer": "לונדון",
+    "isCorrect": false,
+    "timestamp": "2025-12-02T12:10:44.175Z"
+  },
+  {
+    "id": "1764679610835",
+    "name": "123",
+    "employeeId": "123",
+    "answer": "Paris",
+    "isCorrect": true,
+    "timestamp": "2025-12-02T12:46:50.835Z"
+  },
+  {
+    "id": "1764680782086",
+    "name": "123",
+    "employeeId": "123",
+    "answer": "Madrid4",
+    "isCorrect": false,
+    "timestamp": "2025-12-02T13:06:22.086Z"
+  }
+]

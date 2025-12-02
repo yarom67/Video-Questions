@@ -1,0 +1,28 @@
+{
+  "videoUrl": "/videos/video_1764680627003.mp4",
+  "questions": [
+    {
+      "id": "1",
+      "text": "What is the capital of germany?",
+      "options": [
+        {
+          "id": "a",
+          "text": "London1"
+        },
+        {
+          "id": "b",
+          "text": "Paris2",
+          "correct": true
+        },
+        {
+          "id": "c",
+          "text": "Berlin3"
+        },
+        {
+          "id": "d",
+          "text": "Madrid4"
+        }
+      ]
+    }
+  ]
+}
