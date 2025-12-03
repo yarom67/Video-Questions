@@ -11,11 +11,12 @@ interface Question {
 
 interface Content {
     videoUrl: string;
+    backgroundImageUrl: string;
     questions: Question[];
 }
 
 export default function AdminPage() {
-    const [content, setContent] = useState<Content>({ videoUrl: '', questions: [] });
+    const [content, setContent] = useState<Content>({ videoUrl: '', backgroundImageUrl: '', questions: [] });
     const [editingQuestion, setEditingQuestion] = useState<Question | null>(null);
     const [submissionsCount, setSubmissionsCount] = useState(0);
     const [uploading, setUploading] = useState(false);
@@ -53,6 +54,7 @@ export default function AdminPage() {
         setUploading(true);
         const formData = new FormData();
         formData.append('file', file);
+        formData.append('type', 'video');
 
         try {
             const res = await fetch('/api/upload', {
@@ -70,6 +72,36 @@ export default function AdminPage() {
         } catch (error) {
             console.error('Error uploading video:', error);
             alert('Error uploading video');
+        } finally {
+            setUploading(false);
+        }
+    };
+
+    const handleBackgroundUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        setUploading(true);
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('type', 'image');
+
+        try {
+            const res = await fetch('/api/upload', {
+                method: 'POST',
+                body: formData,
+            });
+            const data = await res.json();
+
+            if (data.success) {
+                setContent({ ...content, backgroundImageUrl: data.backgroundImageUrl });
+                alert('Background image uploaded successfully!');
+            } else {
+                alert('Error uploading background image: ' + data.error);
+            }
+        } catch (error) {
+            console.error('Error uploading background:', error);
+            alert('Error uploading background image');
         } finally {
             setUploading(false);
         }
@@ -165,6 +197,21 @@ export default function AdminPage() {
                         type="file"
                         accept="video/*"
                         onChange={handleVideoUpload}
+                        disabled={uploading}
+                    />
+                    {uploading && <p>Uploading...</p>}
+                </div>
+            </section>
+
+            {/* Background Image Upload Section */}
+            <section className={styles.section}>
+                <h2>Background Image Upload</h2>
+                <div className={styles.videoSection}>
+                    <p>Current background: <code>{content.backgroundImageUrl || 'None'}</code></p>
+                    <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleBackgroundUpload}
                         disabled={uploading}
                     />
                     {uploading && <p>Uploading...</p>}

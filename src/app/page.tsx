@@ -17,6 +17,7 @@ export default function Home() {
   const [step, setStep] = useState<Step>('info');
   const [userInfo, setUserInfo] = useState<{ name: string; employeeId: string } | null>(null);
   const [videoUrl, setVideoUrl] = useState('');
+  const [backgroundImageUrl, setBackgroundImageUrl] = useState('');
   const [questions, setQuestions] = useState<Question[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -29,6 +30,7 @@ export default function Home() {
       const res = await fetch('/api/content');
       const data = await res.json();
       setVideoUrl(data.videoUrl || '');
+      setBackgroundImageUrl(data.backgroundImageUrl || '');
       setQuestions(data.questions || []);
     } catch (error) {
       console.error('Error fetching content:', error);
@@ -78,8 +80,16 @@ export default function Home() {
     return <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>Loading...</div>;
   }
 
+  // Apply background only when NOT showing video
+  const showBackground = step !== 'video' && backgroundImageUrl;
+
   return (
-    <main>
+    <main style={showBackground ? {
+      backgroundImage: `url(${backgroundImageUrl})`,
+      backgroundSize: 'cover',
+      backgroundPosition: 'center',
+      backgroundRepeat: 'no-repeat'
+    } : {}}>
       {step === 'info' && (
         <UserInfoModal onSubmit={handleUserInfoSubmit} />
       )}

@@ -30,7 +30,7 @@ export async function GET() {
 export async function POST(request: Request) {
     try {
         const body = await request.json();
-        const { videoUrl, questions } = body;
+        const { videoUrl, backgroundImageUrl, questions } = body;
 
         if (!videoUrl || !questions) {
             return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
@@ -42,7 +42,7 @@ export async function POST(request: Request) {
         }
 
         // Write content to file
-        fs.writeFileSync(contentPath, JSON.stringify({ videoUrl, questions }, null, 2));
+        fs.writeFileSync(contentPath, JSON.stringify({ videoUrl, backgroundImageUrl: backgroundImageUrl || '', questions }, null, 2));
 
         return NextResponse.json({ success: true });
     } catch (error) {
