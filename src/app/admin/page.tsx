@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import * as XLSX from 'xlsx';
 import styles from './admin.module.css';
 
 interface Question {
@@ -15,16 +16,25 @@ interface Content {
     questions: Question[];
 }
 
+interface Submission {
+    id: string;
+    name: string;
+    employeeId: string;
+    answer: string;
+    isCorrect: boolean;
+    timestamp: string;
+}
+
 export default function AdminPage() {
     const [content, setContent] = useState<Content>({ videoUrl: '', backgroundImageUrl: '', questions: [] });
     const [editingQuestion, setEditingQuestion] = useState<Question | null>(null);
-    const [submissionsCount, setSubmissionsCount] = useState(0);
+    const [submissions, setSubmissions] = useState<Submission[]>([]);
     const [uploading, setUploading] = useState(false);
     const [saving, setSaving] = useState(false);
 
     useEffect(() => {
         fetchContent();
-        fetchSubmissionsCount();
+        fetchSubmissions();
     }, []);
 
     const fetchContent = async () => {
@@ -37,11 +47,15 @@ export default function AdminPage() {
         }
     };
 
-    const fetchSubmissionsCount = async () => {
+    const fetchSubmissions = async () => {
         try {
             const res = await fetch('/api/reset');
             const data = await res.json();
-            setSubmissionsCount(data.count || 0);
+            // Sort by timestamp descending
+            const sorted = (data.submissions || []).sort((a: Submission, b: Submission) =>
+                new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+            );
+            setSubmissions(sorted);
         } catch (error) {
             console.error('Error fetching submissions:', error);
         }
@@ -168,13 +182,13 @@ export default function AdminPage() {
     };
 
     const resetSubmissions = async () => {
-        if (!confirm(`Are you sure you want to delete all ${submissionsCount} submissions?`)) return;
+        if (!confirm(`Are you sure you want to delete all ${submissions.length} submissions?`)) return;
 
         try {
             const res = await fetch('/api/reset', { method: 'POST' });
             if (res.ok) {
                 alert('All submissions have been reset');
-                setSubmissionsCount(0);
+                setSubmissions([]);
             } else {
                 alert('Error resetting submissions');
             }
@@ -182,6 +196,21 @@ export default function AdminPage() {
             console.error('Error resetting submissions:', error);
             alert('Error resetting submissions');
         }
+    };
+
+    const handleExport = () => {
+        const ws = XLSX.utils.json_to_sheet(submissions.map(s => ({
+            'Full Name': s.name,
+            'Employee ID': s.employeeId,
+            'Answer': s.answer,
+            'Is Correct': s.isCorrect ? 'Yes' : 'No',
+            'Timestamp': new Date(s.timestamp).toLocaleString()
+        })));
+
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "Submissions");
+
+        XLSX.writeFile(wb, "quiz_submissions.xlsx");
     };
 
     return (
@@ -306,10 +335,49 @@ export default function AdminPage() {
             {/* User Data Section */}
             <section className={styles.section}>
                 <h2>User Data</h2>
-                <p>Total submissions: <strong>{submissionsCount}</strong></p>
-                <button onClick={resetSubmissions} className={styles.deleteBtn}>
-                    Reset All Submissions
-                </button>
+                <div className={styles.dataHeader}>
+                    <p>Total submissions: <strong>{submissions.length}</strong></p>
+                    <div className={styles.dataActions}>
+                        <button onClick={handleExport} className={styles.exportBtn}>
+                            Export to Excel
+                        </button>
+                        <button onClick={resetSubmissions} className={styles.deleteBtn}>
+                            Reset All Submissions
+                        </button>
+                    </div>
+                </div>
+
+                <div className={styles.tableWrapper}>
+                    <table className={styles.dataTable}>
+                        <thead>
+                            <tr>
+                                <th>Timestamp</th>
+                                <th>Name</th>
+                                <th>Employee ID</th>
+                                <th>Answer</th>
+                                <th>Correct</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {submissions.map((sub) => (
+                                <tr key={sub.id}>
+                                    <td>{new Date(sub.timestamp).toLocaleString()}</td>
+                                    <td>{sub.name}</td>
+                                    <td>{sub.employeeId}</td>
+                                    <td>{sub.answer}</td>
+                                    <td style={{ color: sub.isCorrect ? 'green' : 'red', fontWeight: 'bold' }}>
+                                        {sub.isCorrect ? 'Yes' : 'No'}
+                                    </td>
+                                </tr>
+                            ))}
+                            {submissions.length === 0 && (
+                                <tr>
+                                    <td colSpan={5} style={{ textAlign: 'center', padding: '1rem' }}>No submissions yet</td>
+                                </tr>
+                            )}
+                        </tbody>
+                    </table>
+                </div>
             </section>
 
             {/* Save All Changes */}

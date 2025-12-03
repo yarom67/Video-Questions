@@ -68,7 +68,8 @@ export default function Home() {
       if (response.ok) {
         setStep('success');
       } else {
-        alert('Error sending data. Please try again.'); // Error sending data
+        const data = await response.json();
+        alert('Error sending data: ' + (data.error || 'Unknown error'));
       }
     } catch (error) {
       console.error('Error submitting quiz:', error);

@@ -48,8 +48,8 @@ export async function POST(request: Request) {
         fs.writeFileSync(filePath, JSON.stringify(submissions, null, 2));
 
         return NextResponse.json({ success: true });
-    } catch (error) {
+    } catch (error: any) {
         console.error('Error processing submission:', error);
-        return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+        return NextResponse.json({ error: 'Internal Server Error: ' + error.message }, { status: 500 });
     }
 }
