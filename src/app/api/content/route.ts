@@ -1,25 +1,36 @@
 import { NextResponse } from 'next/server';
-import fs from 'fs';
-import path from 'path';
+import { put, head } from '@vercel/blob';
 
-const dataDir = path.join(process.cwd(), 'data');
-const contentPath = path.join(dataDir, 'content.json');
+const CONTENT_KEY = 'content.json';
 
 // GET: Return current quiz content
 export async function GET() {
     try {
-        if (!fs.existsSync(contentPath)) {
-            // Return default content if file doesn't exist
+        // Try to fetch from Blob
+        const blobUrl = `${process.env.BLOB_READ_WRITE_TOKEN ? 'https://' + process.env.BLOB_STORE_ID + '.public.blob.vercel-storage.com/' + CONTENT_KEY : ''}`;
+
+        if (!blobUrl) {
+            // Return default content if Blob is not configured
             return NextResponse.json({
-                videoUrl: 'https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4',
+                videoUrl: '',
+                backgroundImageUrl: '',
                 questions: []
             });
         }
 
-        const fileContent = fs.readFileSync(contentPath, 'utf-8');
-        const content = JSON.parse(fileContent);
-
-        return NextResponse.json(content);
+        try {
+            await head(blobUrl);
+            const response = await fetch(blobUrl);
+            const content = await response.json();
+            return NextResponse.json(content);
+        } catch {
+            // File doesn't exist yet, return default
+            return NextResponse.json({
+                videoUrl: '',
+                backgroundImageUrl: '',
+                questions: []
+            });
+        }
     } catch (error) {
         console.error('Error reading content:', error);
         return NextResponse.json({ error: 'Failed to read content' }, { status: 500 });
@@ -36,13 +47,13 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
         }
 
-        // Ensure data directory exists
-        if (!fs.existsSync(dataDir)) {
-            fs.mkdirSync(dataDir, { recursive: true });
-        }
+        const content = { videoUrl, backgroundImageUrl: backgroundImageUrl || '', questions };
 
-        // Write content to file
-        fs.writeFileSync(contentPath, JSON.stringify({ videoUrl, backgroundImageUrl: backgroundImageUrl || '', questions }, null, 2));
+        // Upload to Blob
+        await put(CONTENT_KEY, JSON.stringify(content, null, 2), {
+            access: 'public',
+            contentType: 'application/json',
+        });
 
         return NextResponse.json({ success: true });
     } catch (error) {

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
-import fs from 'fs';
-import path from 'path';
+import { put, head } from '@vercel/blob';
+
+const SUBMISSIONS_KEY = 'submissions.json';
 
 export async function POST(request: Request) {
     try {
@@ -11,23 +12,17 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
         }
 
-        const dataDir = path.join(process.cwd(), 'data');
-        const filePath = path.join(dataDir, 'submissions.json');
-
-        // Ensure data directory exists
-        if (!fs.existsSync(dataDir)) {
-            fs.mkdirSync(dataDir);
-        }
-
-        // Read existing data
+        // Read existing submissions from Blob
         let submissions = [];
-        if (fs.existsSync(filePath)) {
-            const fileContent = fs.readFileSync(filePath, 'utf-8');
+        const blobUrl = `${process.env.BLOB_READ_WRITE_TOKEN ? 'https://' + process.env.BLOB_STORE_ID + '.public.blob.vercel-storage.com/' + SUBMISSIONS_KEY : ''}`;
+
+        if (blobUrl) {
             try {
-                submissions = JSON.parse(fileContent);
-            } catch (e) {
-                console.error('Error parsing submissions file:', e);
-                // If file is corrupt, start fresh or handle error. For simplicity, start fresh.
+                await head(blobUrl);
+                const response = await fetch(blobUrl);
+                submissions = await response.json();
+            } catch {
+                // File doesn't exist yet, start with empty array
                 submissions = [];
             }
         }
@@ -44,8 +39,11 @@ export async function POST(request: Request) {
 
         submissions.push(newSubmission);
 
-        // Write back to file
-        fs.writeFileSync(filePath, JSON.stringify(submissions, null, 2));
+        // Write back to Blob
+        await put(SUBMISSIONS_KEY, JSON.stringify(submissions, null, 2), {
+            access: 'public',
+            contentType: 'application/json',
+        });
 
         return NextResponse.json({ success: true });
     } catch (error: any) {

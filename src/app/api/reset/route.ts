@@ -1,14 +1,21 @@
 import { NextResponse } from 'next/server';
-import fs from 'fs';
-import path from 'path';
+import { put, head, del } from '@vercel/blob';
 
-const submissionsPath = path.join(process.cwd(), 'data', 'submissions.json');
+const SUBMISSIONS_KEY = 'submissions.json';
 
 // POST: Clear all user submissions
 export async function POST() {
     try {
-        // Write empty array to file
-        fs.writeFileSync(submissionsPath, JSON.stringify([], null, 2));
+        // Delete the submissions file from Blob
+        const blobUrl = `${process.env.BLOB_READ_WRITE_TOKEN ? 'https://' + process.env.BLOB_STORE_ID + '.public.blob.vercel-storage.com/' + SUBMISSIONS_KEY : ''}`;
+
+        if (blobUrl) {
+            try {
+                await del(blobUrl);
+            } catch {
+                // File might not exist, that's okay
+            }
+        }
 
         return NextResponse.json({ success: true, message: 'All submissions cleared' });
     } catch (error) {
@@ -17,17 +24,24 @@ export async function POST() {
     }
 }
 
-// GET: Return current submissions count
+// GET: Return current submissions count and data
 export async function GET() {
     try {
-        if (!fs.existsSync(submissionsPath)) {
-            return NextResponse.json({ count: 0 });
+        const blobUrl = `${process.env.BLOB_READ_WRITE_TOKEN ? 'https://' + process.env.BLOB_STORE_ID + '.public.blob.vercel-storage.com/' + SUBMISSIONS_KEY : ''}`;
+
+        if (!blobUrl) {
+            return NextResponse.json({ count: 0, submissions: [] });
         }
 
-        const fileContent = fs.readFileSync(submissionsPath, 'utf-8');
-        const submissions = JSON.parse(fileContent);
-
-        return NextResponse.json({ count: submissions.length, submissions });
+        try {
+            await head(blobUrl);
+            const response = await fetch(blobUrl);
+            const submissions = await response.json();
+            return NextResponse.json({ count: submissions.length, submissions });
+        } catch {
+            // File doesn't exist
+            return NextResponse.json({ count: 0, submissions: [] });
+        }
     } catch (error) {
         console.error('Error reading submissions:', error);
         return NextResponse.json({ error: 'Failed to read submissions' }, { status: 500 });
