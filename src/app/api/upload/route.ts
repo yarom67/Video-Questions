@@ -27,6 +27,9 @@ export async function POST(request: Request) {
                 backgroundImageUrl: blob.url
             });
             return NextResponse.json({ success: true, backgroundImageUrl: blob.url });
+        } else if (type === 'question-image') {
+            // Just return the URL, don't update global config
+            return NextResponse.json({ success: true, url: blob.url });
         } else {
             // Save video URL to Redis immediately
             await storage.saveMediaConfig({

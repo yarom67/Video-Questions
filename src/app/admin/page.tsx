@@ -7,7 +7,10 @@ import styles from './admin.module.css';
 interface Question {
     id: string;
     text: string;
-    options: Array<{ id: string; text: string; correct?: boolean }>;
+    imageUrl?: string;
+    answer: string;
+    // content.json might still have options field if we don't clean it up, but we won't use it.
+    options?: Array<any>;
 }
 
 interface Content {
@@ -159,12 +162,9 @@ export default function AdminPage() {
         const newQuestion: Question = {
             id: Date.now().toString(),
             text: '',
-            options: [
-                { id: 'a', text: '' },
-                { id: 'b', text: '' },
-                { id: 'c', text: '' },
-                { id: 'd', text: '' },
-            ],
+            imageUrl: '',
+            answer: '',
+            options: [],
         };
         setEditingQuestion(newQuestion);
     };
@@ -311,13 +311,10 @@ export default function AdminPage() {
                         <div key={question.id} className={styles.questionCard}>
                             <h3>Question {index + 1}</h3>
                             <p>{question.text}</p>
-                            <ul>
-                                {(question.options || []).map(opt => (
-                                    <li key={opt.id}>
-                                        {opt.text} {opt.correct && <strong>(Correct)</strong>}
-                                    </li>
-                                ))}
-                            </ul>
+                            {question.imageUrl && (
+                                <img src={question.imageUrl} alt="Riddle" style={{ maxWidth: '100px', display: 'block', marginTop: '5px' }} />
+                            )}
+                            <p><strong>Answer:</strong> {question.answer}</p>
                             <div className={styles.actions}>
                                 <button onClick={() => setEditingQuestion(question)}>Edit</button>
                                 <button onClick={() => deleteQuestion(question.id)} className={styles.deleteBtn}>
@@ -345,35 +342,55 @@ export default function AdminPage() {
                                 />
                             </div>
 
-                            {editingQuestion.options.map((option, idx) => (
-                                <div key={option.id} className={styles.formGroup}>
-                                    <label>Option {option.id.toUpperCase()}:</label>
-                                    <input
-                                        type="text"
-                                        value={option.text}
-                                        onChange={(e) => {
-                                            const newOptions = [...editingQuestion.options];
-                                            newOptions[idx].text = e.target.value;
-                                            setEditingQuestion({ ...editingQuestion, options: newOptions });
-                                        }}
-                                        placeholder={`Option ${option.id.toUpperCase()}`}
-                                    />
-                                    <label className={styles.checkboxLabel}>
-                                        <input
-                                            type="checkbox"
-                                            checked={option.correct || false}
-                                            onChange={(e) => {
-                                                const newOptions = editingQuestion.options.map((opt, i) => ({
-                                                    ...opt,
-                                                    correct: i === idx ? e.target.checked : false,
-                                                }));
-                                                setEditingQuestion({ ...editingQuestion, options: newOptions });
-                                            }}
-                                        />
-                                        Correct Answer
-                                    </label>
-                                </div>
-                            ))}
+                            <div className={styles.formGroup}>
+                                <label>Riddle Image:</label>
+                                {editingQuestion.imageUrl && (
+                                    <div style={{ marginBottom: '10px' }}>
+                                        <img src={editingQuestion.imageUrl} alt="Current" style={{ maxWidth: '200px' }} />
+                                    </div>
+                                )}
+                                <input
+                                    type="file"
+                                    accept="image/*"
+                                    onChange={async (e) => {
+                                        const file = e.target.files?.[0];
+                                        if (!file) return;
+
+                                        // Upload logic customized for question image
+                                        const formData = new FormData();
+                                        formData.append('file', file);
+                                        formData.append('type', 'question-image');
+
+                                        try {
+                                            const res = await fetch('/api/upload', {
+                                                method: 'POST',
+                                                body: formData,
+                                            });
+                                            const data = await res.json();
+                                            if (data.success) {
+                                                setEditingQuestion({ ...editingQuestion, imageUrl: data.url });
+                                            } else {
+                                                alert('Error uploading image');
+                                            }
+                                        } catch (err) {
+                                            console.error(err);
+                                            alert('Error uploading image');
+                                        }
+                                    }}
+                                />
+                            </div>
+
+                            <div className={styles.formGroup}>
+                                <label>Correct Answer (Single Word):</label>
+                                <input
+                                    type="text"
+                                    value={editingQuestion.answer || ''}
+                                    onChange={(e) =>
+                                        setEditingQuestion({ ...editingQuestion, answer: e.target.value })
+                                    }
+                                    placeholder="Enter the correct answer"
+                                />
+                            </div>
 
                             <div className={styles.modalActions}>
                                 <button onClick={saveQuestion} className={styles.saveBtn}>Save Question</button>
