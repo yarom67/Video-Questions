@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { redis } from '@/lib/redis';
+import { storage } from '@/lib/storage';
 
 export async function POST(request: Request) {
     try {
@@ -10,14 +10,7 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
         }
 
-        // Get existing submissions
-        const existingData = await redis.get('submissions');
-        let submissions = [];
-        if (existingData) {
-            submissions = JSON.parse(existingData);
-        }
-
-        // Add new submission
+        // Use centralized storage to save submission
         const newSubmission = {
             id: Date.now().toString(),
             name,
@@ -27,10 +20,7 @@ export async function POST(request: Request) {
             timestamp: new Date().toISOString(),
         };
 
-        submissions.push(newSubmission);
-
-        // Save back to Redis
-        await redis.set('submissions', JSON.stringify(submissions));
+        await storage.saveSubmission(newSubmission);
 
         return NextResponse.json({ success: true });
     } catch (error: any) {
