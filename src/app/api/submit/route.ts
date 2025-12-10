@@ -1,11 +1,5 @@
 import { NextResponse } from 'next/server';
-import { put, head } from '@vercel/blob';
-import fs from 'fs';
-import path from 'path';
-
-const SUBMISSIONS_KEY = 'submissions.json';
-const dataDir = path.join(process.cwd(), 'data');
-const filePath = path.join(dataDir, 'submissions.json');
+import { redis } from '@/lib/redis';
 
 export async function POST(request: Request) {
     try {
@@ -16,28 +10,11 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
         }
 
+        // Get existing submissions
+        const existingData = await redis.get('submissions');
         let submissions = [];
-
-        if (process.env.BLOB_READ_WRITE_TOKEN) {
-            // Read from Blob
-            const blobUrl = `https://${process.env.BLOB_STORE_ID}.public.blob.vercel-storage.com/${SUBMISSIONS_KEY}`;
-            try {
-                await head(blobUrl);
-                const response = await fetch(blobUrl);
-                submissions = await response.json();
-            } catch {
-                submissions = [];
-            }
-        } else {
-            // Read from Local FS
-            if (fs.existsSync(filePath)) {
-                try {
-                    const fileContent = fs.readFileSync(filePath, 'utf-8');
-                    submissions = JSON.parse(fileContent);
-                } catch {
-                    submissions = [];
-                }
-            }
+        if (existingData) {
+            submissions = JSON.parse(existingData);
         }
 
         // Add new submission
@@ -52,19 +29,8 @@ export async function POST(request: Request) {
 
         submissions.push(newSubmission);
 
-        if (process.env.BLOB_READ_WRITE_TOKEN) {
-            // Write to Blob
-            await put(SUBMISSIONS_KEY, JSON.stringify(submissions, null, 2), {
-                access: 'public',
-                contentType: 'application/json',
-            });
-        } else {
-            // Write to Local FS
-            if (!fs.existsSync(dataDir)) {
-                fs.mkdirSync(dataDir);
-            }
-            fs.writeFileSync(filePath, JSON.stringify(submissions, null, 2));
-        }
+        // Save back to Redis
+        await redis.set('submissions', JSON.stringify(submissions));
 
         return NextResponse.json({ success: true });
     } catch (error: any) {

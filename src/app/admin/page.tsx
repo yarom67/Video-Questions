@@ -14,6 +14,7 @@ interface Content {
     videoUrl: string;
     backgroundImageUrl: string;
     questions: Question[];
+    videoType?: 'upload' | 'youtube';
 }
 
 interface Submission {
@@ -26,7 +27,7 @@ interface Submission {
 }
 
 export default function AdminPage() {
-    const [content, setContent] = useState<Content>({ videoUrl: '', backgroundImageUrl: '', questions: [] });
+    const [content, setContent] = useState<Content>({ videoUrl: '', backgroundImageUrl: '', questions: [], videoType: 'upload' });
     const [editingQuestion, setEditingQuestion] = useState<Question | null>(null);
     const [submissions, setSubmissions] = useState<Submission[]>([]);
     const [uploading, setUploading] = useState(false);
@@ -41,6 +42,17 @@ export default function AdminPage() {
         try {
             const res = await fetch('/api/content');
             const data = await res.json();
+
+            // Sanitize questions to ensure options array exists
+            if (data.questions) {
+                data.questions = data.questions.map((q: Question) => ({
+                    ...q,
+                    options: q.options || []
+                }));
+            } else {
+                data.questions = [];
+            }
+
             setContent(data);
         } catch (error) {
             console.error('Error fetching content:', error);
@@ -217,18 +229,58 @@ export default function AdminPage() {
         <div className={styles.container}>
             <h1 className={styles.title}>Admin Dashboard</h1>
 
-            {/* Video Upload Section */}
+            {/* Video Upload/Embed Section */}
             <section className={styles.section}>
-                <h2>Video Upload</h2>
+                <h2>Video Configuration</h2>
+
+                <div className={styles.typeSelector}>
+                    <label>
+                        <input
+                            type="radio"
+                            name="videoType"
+                            value="upload"
+                            checked={content.videoType !== 'youtube'}
+                            onChange={() => setContent({ ...content, videoType: 'upload' })}
+                        />
+                        Upload Video
+                    </label>
+                    <label>
+                        <input
+                            type="radio"
+                            name="videoType"
+                            value="youtube"
+                            checked={content.videoType === 'youtube'}
+                            onChange={() => setContent({ ...content, videoType: 'youtube' })}
+                        />
+                        YouTube Embed
+                    </label>
+                </div>
+
                 <div className={styles.videoSection}>
-                    <p>Current video: <code>{content.videoUrl || 'None'}</code></p>
-                    <input
-                        type="file"
-                        accept="video/*"
-                        onChange={handleVideoUpload}
-                        disabled={uploading}
-                    />
-                    {uploading && <p>Uploading...</p>}
+                    <p>Current video URL: <code>{content.videoUrl || 'None'}</code></p>
+
+                    {content.videoType === 'youtube' ? (
+                        <div className={styles.formGroup}>
+                            <label>YouTube URL:</label>
+                            <input
+                                type="text"
+                                placeholder="https://www.youtube.com/watch?v=..."
+                                value={content.videoUrl}
+                                onChange={(e) => setContent({ ...content, videoUrl: e.target.value })}
+                                style={{ width: '100%', padding: '0.5rem' }}
+                            />
+                        </div>
+                    ) : (
+                        <>
+                            <input
+                                type="file"
+                                accept="video/*"
+                                onChange={handleVideoUpload}
+                                disabled={uploading}
+                            />
+                            {uploading && <p>Uploading...</p>}
+                        </>
+                    )}
                 </div>
             </section>
 
@@ -260,7 +312,7 @@ export default function AdminPage() {
                             <h3>Question {index + 1}</h3>
                             <p>{question.text}</p>
                             <ul>
-                                {question.options.map(opt => (
+                                {(question.options || []).map(opt => (
                                     <li key={opt.id}>
                                         {opt.text} {opt.correct && <strong>(Correct)</strong>}
                                     </li>

@@ -17,6 +17,7 @@ export default function Home() {
   const [step, setStep] = useState<Step>('info');
   const [userInfo, setUserInfo] = useState<{ name: string; employeeId: string } | null>(null);
   const [videoUrl, setVideoUrl] = useState('');
+  const [videoType, setVideoType] = useState<'upload' | 'youtube'>('upload');
   const [backgroundImageUrl, setBackgroundImageUrl] = useState('');
   const [questions, setQuestions] = useState<Question[]>([]);
   const [loading, setLoading] = useState(true);
@@ -30,6 +31,7 @@ export default function Home() {
       const res = await fetch('/api/content');
       const data = await res.json();
       setVideoUrl(data.videoUrl || '');
+      setVideoType(data.videoType || 'upload');
       setBackgroundImageUrl(data.backgroundImageUrl || '');
       setQuestions(data.questions || []);
     } catch (error) {
@@ -96,7 +98,7 @@ export default function Home() {
       )}
 
       {step === 'video' && (
-        <VideoPlayer onVideoEnd={handleVideoEnd} videoSrc={videoUrl} />
+        <VideoPlayer onVideoEnd={handleVideoEnd} videoSrc={videoUrl} videoType={videoType} />
       )}
 
       {step === 'quiz' && (

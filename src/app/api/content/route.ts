@@ -1,46 +1,21 @@
 import { NextResponse } from 'next/server';
-import { put, head } from '@vercel/blob';
-import fs from 'fs';
-import path from 'path';
-
-const CONTENT_KEY = 'content.json';
-const dataDir = path.join(process.cwd(), 'data');
-const contentPath = path.join(dataDir, 'content.json');
+import { storage } from '@/lib/storage';
 
 // GET: Return current quiz content
 export async function GET() {
     try {
-        // Check if we should use Vercel Blob (Production) or Local FS (Development)
-        if (process.env.BLOB_READ_WRITE_TOKEN) {
-            const blobUrl = `https://${process.env.BLOB_STORE_ID}.public.blob.vercel-storage.com/${CONTENT_KEY}`;
+        // Fetch media and questions separately
+        const [mediaConfig, questions] = await Promise.all([
+            storage.getMediaConfig(),
+            storage.getQuestions()
+        ]);
 
-            try {
-                await head(blobUrl);
-                const response = await fetch(blobUrl);
-                const content = await response.json();
-                return NextResponse.json(content);
-            } catch {
-                // Return default if not found
-                return NextResponse.json({
-                    videoUrl: '',
-                    backgroundImageUrl: '',
-                    questions: []
-                });
-            }
-        } else {
-            // Local File System Fallback
-            if (!fs.existsSync(contentPath)) {
-                return NextResponse.json({
-                    videoUrl: '',
-                    backgroundImageUrl: '',
-                    questions: []
-                });
-            }
-
-            const fileContent = fs.readFileSync(contentPath, 'utf-8');
-            const content = JSON.parse(fileContent);
-            return NextResponse.json(content);
-        }
+        return NextResponse.json({
+            videoUrl: mediaConfig?.videoUrl || 'https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4',
+            backgroundImageUrl: mediaConfig?.backgroundImageUrl || '/default-bg.jpg',
+            videoType: mediaConfig?.videoType || 'upload',
+            questions: questions || []
+        });
     } catch (error) {
         console.error('Error reading content:', error);
         return NextResponse.json({ error: 'Failed to read content' }, { status: 500 });
@@ -51,27 +26,29 @@ export async function GET() {
 export async function POST(request: Request) {
     try {
         const body = await request.json();
-        const { videoUrl, backgroundImageUrl, questions } = body;
+        const { videoUrl, backgroundImageUrl, videoType, questions } = body;
 
-        if (!videoUrl || !questions) {
-            return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
-        }
-
-        const content = { videoUrl, backgroundImageUrl: backgroundImageUrl || '', questions };
-
-        if (process.env.BLOB_READ_WRITE_TOKEN) {
-            // Upload to Blob
-            await put(CONTENT_KEY, JSON.stringify(content, null, 2), {
-                access: 'public',
-                contentType: 'application/json',
+        // Save Media if provided
+        if (videoUrl !== undefined || backgroundImageUrl !== undefined || videoType !== undefined) {
+            await storage.saveMediaConfig({
+                videoUrl,
+                backgroundImageUrl,
+                videoType
             });
-        } else {
-            // Local File System Fallback
-            if (!fs.existsSync(dataDir)) {
-                fs.mkdirSync(dataDir, { recursive: true });
-            }
-            fs.writeFileSync(contentPath, JSON.stringify(content, null, 2));
         }
+
+        // Save Questions if provided
+        if (questions !== undefined) {
+            await storage.saveQuestions(questions);
+        }
+
+        // Also call legacy saveContent to keep file backup in sync
+        await storage.saveContent({
+            videoUrl,
+            backgroundImageUrl,
+            videoType,
+            questions
+        });
 
         return NextResponse.json({ success: true });
     } catch (error) {
