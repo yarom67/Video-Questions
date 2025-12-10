@@ -12,6 +12,6 @@ if (process.env.NODE_ENV !== 'production') {
     globalForRedis.redis = redis;
 }
 
-if (!redis.isOpen) {
+if (!redis.isOpen && (process.env.REDIS_URL || process.env.quiz_REDIS_URL)) {
     redis.connect().catch((err) => console.error('Redis Client Error', err));
 }
