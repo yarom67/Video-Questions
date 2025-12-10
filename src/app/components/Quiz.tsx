@@ -14,6 +14,7 @@ interface QuizProps {
 export default function Quiz({ onSubmit, onBack, questions }: QuizProps) {
     const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [isPreviewOpen, setIsPreviewOpen] = useState(false);
 
     // Use the first question for now (can be extended for multiple questions)
     const question = questions[0];
@@ -53,11 +54,13 @@ export default function Quiz({ onSubmit, onBack, questions }: QuizProps) {
                         <img
                             src={question.imageUrl}
                             alt="Riddle"
+                            onClick={() => setIsPreviewOpen(true)}
                             style={{
                                 maxWidth: '100%',
                                 maxHeight: '300px',
                                 borderRadius: '8px',
-                                objectFit: 'contain'
+                                objectFit: 'contain',
+                                cursor: 'zoom-in'
                             }}
                         />
                     )}
@@ -96,6 +99,63 @@ export default function Quiz({ onSubmit, onBack, questions }: QuizProps) {
                     </button>
                 </div>
             </div>
+
+
+            {/* Image Preview Modal */}
+            {
+                isPreviewOpen && question.imageUrl && (
+                    <div
+                        style={{
+                            position: 'fixed',
+                            top: 0,
+                            left: 0,
+                            width: '100%',
+                            height: '100%',
+                            backgroundColor: 'rgba(0,0,0,0.9)',
+                            zIndex: 2000,
+                            display: 'flex',
+                            justifyContent: 'center',
+                            alignItems: 'center',
+                            cursor: 'zoom-out'
+                        }}
+                        onClick={() => setIsPreviewOpen(false)}
+                    >
+                        <div style={{ position: 'relative', maxWidth: '90%', maxHeight: '90%' }}>
+                            {/* Close Button */}
+                            <button
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    setIsPreviewOpen(false);
+                                }}
+                                style={{
+                                    position: 'absolute',
+                                    top: '-40px',
+                                    right: '-40px',
+                                    background: 'transparent',
+                                    border: 'none',
+                                    color: 'white',
+                                    fontSize: '2rem',
+                                    cursor: 'pointer',
+                                    padding: '10px'
+                                }}
+                            >
+                                ✕
+                            </button>
+
+                            <img
+                                src={question.imageUrl}
+                                alt="Full Preview"
+                                style={{
+                                    maxWidth: '100vw',
+                                    maxHeight: '90vh',
+                                    objectFit: 'contain'
+                                }}
+                                onClick={(e) => e.stopPropagation()}
+                            />
+                        </div>
+                    </div>
+                )
+            }
         </div>
     );
 }

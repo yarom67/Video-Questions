@@ -4,8 +4,9 @@ import React, { useState, useEffect } from 'react';
 import UserInfoModal from './components/UserInfoModal';
 import VideoPlayer from './components/VideoPlayer';
 import Quiz from './components/Quiz';
+import TermsModal from './components/TermsModal';
 
-type Step = 'info' | 'video' | 'quiz' | 'success';
+type Step = 'info' | 'terms' | 'video' | 'quiz' | 'success';
 
 interface Question {
   id: string;
@@ -22,6 +23,7 @@ export default function Home() {
   const [backgroundImageUrl, setBackgroundImageUrl] = useState('');
   const [questions, setQuestions] = useState<Question[]>([]);
   const [loading, setLoading] = useState(true);
+  const [videoKey, setVideoKey] = useState(Date.now());
 
   useEffect(() => {
     fetchContent();
@@ -44,6 +46,10 @@ export default function Home() {
 
   const handleUserInfoSubmit = (name: string, employeeId: string) => {
     setUserInfo({ name, employeeId });
+    setStep('terms');
+  };
+
+  const handleTermsSubmit = () => {
     setStep('video');
   };
 
@@ -94,7 +100,7 @@ export default function Home() {
       backgroundPosition: 'center',
       backgroundRepeat: 'no-repeat'
     } : {}}>
-      {(step === 'info' || step === 'quiz') && (
+      {(step === 'info' || step === 'terms' || step === 'quiz') && (
         <img
           src="/logo.png"
           alt="Company Logo"
@@ -113,12 +119,23 @@ export default function Home() {
         <UserInfoModal onSubmit={handleUserInfoSubmit} />
       )}
 
+      {step === 'terms' && (
+        <TermsModal onConfirm={handleTermsSubmit} />
+      )}
+
       {step === 'video' && (
-        <VideoPlayer onVideoEnd={handleVideoEnd} videoSrc={videoUrl} videoType={videoType} />
+        <VideoPlayer key={videoKey} onVideoEnd={handleVideoEnd} videoSrc={videoUrl} videoType={videoType} />
       )}
 
       {step === 'quiz' && (
-        <Quiz onSubmit={handleQuizSubmit} onBack={() => setStep('video')} questions={questions} />
+        <Quiz
+          onSubmit={handleQuizSubmit}
+          onBack={() => {
+            setVideoKey(Date.now()); // Force re-mount of video player
+            setStep('video');
+          }}
+          questions={questions}
+        />
       )}
 
       {step === 'success' && (

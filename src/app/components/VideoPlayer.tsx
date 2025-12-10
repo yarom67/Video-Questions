@@ -25,13 +25,7 @@ export default function VideoPlayer({ onVideoEnd, videoSrc, videoType = 'upload'
     // Handle YouTube Player Events
     useEffect(() => {
         if (videoType === 'youtube' && videoSrc) {
-            // Load YouTube IFrame API
-            const tag = document.createElement('script');
-            tag.src = "https://www.youtube.com/iframe_api";
-            const firstScriptTag = document.getElementsByTagName('script')[0];
-            firstScriptTag.parentNode?.insertBefore(tag, firstScriptTag);
-
-            (window as any).onYouTubeIframeAPIReady = () => {
+            const initPlayer = () => {
                 const videoId = getYoutubeId(videoSrc);
                 if (!videoId) return;
 
@@ -55,6 +49,35 @@ export default function VideoPlayer({ onVideoEnd, videoSrc, videoType = 'upload'
                     }
                 });
             };
+
+            if ((window as any).YT && (window as any).YT.Player) {
+                initPlayer();
+            } else {
+                // Initialize array to hold callbacks if not already present
+                if (!(window as any).onYouTubeIframeAPIReady) {
+                    (window as any).onYouTubeIframeAPIReady = () => {
+                        // This will be simpler if we just overwrite it or dispatch event, 
+                        // but for now let's just assume we are the main consumer.
+                        // However, since we might race, let's just set the function.
+                    };
+                }
+
+                // We need to hook into the ready event. 
+                // A common pattern is effectively rewriting the window callback to chain.
+                const oldOnReady = (window as any).onYouTubeIframeAPIReady;
+                (window as any).onYouTubeIframeAPIReady = () => {
+                    if (oldOnReady) oldOnReady();
+                    initPlayer();
+                };
+
+                // Only append script if not present
+                if (!document.querySelector('script[src="https://www.youtube.com/iframe_api"]')) {
+                    const tag = document.createElement('script');
+                    tag.src = "https://www.youtube.com/iframe_api";
+                    const firstScriptTag = document.getElementsByTagName('script')[0];
+                    firstScriptTag.parentNode?.insertBefore(tag, firstScriptTag);
+                }
+            }
         }
     }, [videoType, videoSrc, onVideoEnd]);
 
