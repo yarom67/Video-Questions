@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 
 interface QuizProps {
     onSubmit: (answer: string, isCorrect: boolean) => void;
+    onBack: () => void;
     questions: Array<{
         id: string;
         text: string;
@@ -10,7 +11,7 @@ interface QuizProps {
     }>;
 }
 
-export default function Quiz({ onSubmit, questions }: QuizProps) {
+export default function Quiz({ onSubmit, onBack, questions }: QuizProps) {
     const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -77,13 +78,23 @@ export default function Quiz({ onSubmit, questions }: QuizProps) {
                     />
                 </div>
 
-                <button
-                    onClick={handleSubmit}
-                    className="tool-btn"
-                    disabled={!selectedAnswer || isSubmitting}
-                >
-                    {isSubmitting ? 'Sending...' : 'Send Answer'} {/* Sending... : Send Answer */}
-                </button>
+                <div style={{ display: 'flex', gap: '10px', marginTop: '20px' }}>
+                    <button
+                        onClick={onBack}
+                        className="tool-btn"
+                        style={{ backgroundColor: '#6c757d' }} // Gray color for secondary action
+                    >
+                        Back to Video
+                    </button>
+                    <button
+                        onClick={handleSubmit}
+                        className="tool-btn"
+                        disabled={!selectedAnswer || isSubmitting}
+                        style={{ flex: 1 }}
+                    >
+                        {isSubmitting ? 'Sending...' : 'Send Answer'}
+                    </button>
+                </div>
             </div>
         </div>
     );

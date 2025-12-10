@@ -118,7 +118,7 @@ export default function Home() {
       )}
 
       {step === 'quiz' && (
-        <Quiz onSubmit={handleQuizSubmit} questions={questions} />
+        <Quiz onSubmit={handleQuizSubmit} onBack={() => setStep('video')} questions={questions} />
       )}
 
       {step === 'success' && (
