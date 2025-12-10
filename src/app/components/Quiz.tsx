@@ -5,7 +5,8 @@ interface QuizProps {
     questions: Array<{
         id: string;
         text: string;
-        options: Array<{ id: string; text: string; correct?: boolean }>;
+        imageUrl?: string;
+        answer: string;
     }>;
 }
 
@@ -31,10 +32,13 @@ export default function Quiz({ onSubmit, questions }: QuizProps) {
         if (!selectedAnswer) return;
 
         setIsSubmitting(true);
-        const option = question.options.find(o => o.id === selectedAnswer);
-        const isCorrect = option?.correct || false;
+        // Clean the input: trim and lowercase for comparison
+        const cleanAnswer = selectedAnswer.trim().toLowerCase();
+        const correctAnswer = question.answer.trim().toLowerCase();
 
-        onSubmit(option?.text || '', isCorrect);
+        const isCorrect = cleanAnswer === correctAnswer;
+
+        onSubmit(selectedAnswer, isCorrect);
     };
 
     return (
@@ -43,24 +47,34 @@ export default function Quiz({ onSubmit, questions }: QuizProps) {
                 <h2>Question</h2>
                 <p className="question-text" style={{ fontSize: '1.2rem', marginBottom: '1.5rem' }}>{question.text}</p>
 
-                <div className="options-grid" style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '20px' }}>
-                    {question.options.map((option) => (
-                        <button
-                            key={option.id}
-                            onClick={() => setSelectedAnswer(option.id)}
-                            className={`option-btn ${selectedAnswer === option.id ? 'selected' : ''}`}
+                <div className="riddle-content" style={{ display: 'flex', flexDirection: 'column', gap: '20px', marginBottom: '20px', alignItems: 'center' }}>
+                    {question.imageUrl && (
+                        <img
+                            src={question.imageUrl}
+                            alt="Riddle"
                             style={{
-                                padding: '10px',
-                                border: selectedAnswer === option.id ? '2px solid var(--primary)' : '1px solid #ccc',
+                                maxWidth: '100%',
+                                maxHeight: '300px',
                                 borderRadius: '8px',
-                                background: selectedAnswer === option.id ? '#e6f0ff' : 'white',
-                                cursor: 'pointer',
-                                fontSize: '1rem'
+                                objectFit: 'contain'
                             }}
-                        >
-                            {option.text}
-                        </button>
-                    ))}
+                        />
+                    )}
+
+                    <input
+                        type="text"
+                        value={selectedAnswer || ''}
+                        onChange={(e) => setSelectedAnswer(e.target.value)}
+                        placeholder="Type your answer here..."
+                        style={{
+                            width: '100%',
+                            padding: '12px',
+                            fontSize: '1rem',
+                            border: '1px solid #ccc',
+                            borderRadius: '8px',
+                            textAlign: 'center'
+                        }}
+                    />
                 </div>
 
                 <button

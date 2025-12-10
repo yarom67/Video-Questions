@@ -10,7 +10,8 @@ type Step = 'info' | 'video' | 'quiz' | 'success';
 interface Question {
   id: string;
   text: string;
-  options: Array<{ id: string; text: string; correct?: boolean }>;
+  imageUrl?: string;
+  answer: string;
 }
 
 export default function Home() {

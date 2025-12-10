@@ -1,11 +1,13 @@
 {
   "videoUrl": "https://youtu.be/_ThunqofjRQ",
-  "backgroundImageUrl": "",
+  "backgroundImageUrl": "/default-bg.jpg",
   "videoType": "youtube",
   "questions": [
     {
-      "id": 1,
-      "text": "Test Question",
+      "id": "1765375023341",
+      "text": "Watch closely",
+      "imageUrl": "https://rwkkhh7fmb7z88ny.public.blob.vercel-storage.com/%D7%97%D7%99%D7%93%D7%94%20%D7%9C%D7%98%D7%90%D7%95%D7%95%D7%A8.png",
+      "answer": "PEAK",
       "options": []
     }
   ]
