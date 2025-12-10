@@ -93,6 +93,21 @@ export default function Home() {
       backgroundPosition: 'center',
       backgroundRepeat: 'no-repeat'
     } : {}}>
+      {(step === 'info' || step === 'quiz') && (
+        <img
+          src="/logo.png"
+          alt="Company Logo"
+          style={{
+            position: 'absolute',
+            top: '20px',
+            left: '20px',
+            width: '150px',
+            height: 'auto',
+            zIndex: 1100, // Ensure it's above the modal overlay
+          }}
+        />
+      )}
+
       {step === 'info' && (
         <UserInfoModal onSubmit={handleUserInfoSubmit} />
       )}
